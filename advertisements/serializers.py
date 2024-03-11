@@ -1,10 +1,7 @@
 from django.contrib.auth.models import User
-from django_filters import DateFromToRangeFilter
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-
 from advertisements.models import Advertisement
-
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer для пользователя."""
@@ -42,8 +39,9 @@ class AdvertisementSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """Метод для валидации. Вызывается при создании и обновлении."""
-        user_id = self.context["request"].user.id
-        opened_advs = len(Advertisement.objects.filter(status='OPEN', creator=user_id))
-        if opened_advs > 10:
-            raise ValidationError('Количество открытых объявлений превышает 10')
+        user = self.context["request"].user
+        status = data.get('status')
+        opened_advs = Advertisement.objects.filter(status='OPEN', creator=user)
+        if opened_advs.count() >= 10 and status != 'CLOSED':
+            raise ValidationError('Количество открытых объявлений превышает 10, закройте часть из них перед добавлением нового')
         return data
